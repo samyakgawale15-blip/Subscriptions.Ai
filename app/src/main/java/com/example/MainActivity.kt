@@ -1,9 +1,13 @@
 package com.example
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -22,6 +26,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -161,6 +167,25 @@ fun SubscriptionsApp(viewModel: SubscriptionsViewModel) {
   val isSmsScanning by viewModel.isSmsScanning.collectAsState()
   val selectedBankCode by viewModel.selectedBankCode.collectAsState()
   val selectedAutoPaySignal by viewModel.selectedAutoPaySignal.collectAsState()
+
+  // READ_SMS Runtime Permission Flow
+  val context = LocalContext.current
+  var hasSmsPermission by remember {
+    mutableStateOf(
+      ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+    )
+  }
+
+  val smsPermissionLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.RequestPermission()
+  ) { isGranted ->
+    hasSmsPermission = isGranted
+    if (isGranted) {
+      viewModel.scanDeviceSms(context)
+    } else {
+      viewModel.loadSampleBankSms()
+    }
+  }
 
   Scaffold(
     modifier = Modifier.fillMaxSize(),
@@ -336,10 +361,18 @@ fun SubscriptionsApp(viewModel: SubscriptionsViewModel) {
     BankSmsPipelineDialog(
       smsList = bankSmsList,
       isScanning = isSmsScanning,
+      hasSmsPermission = hasSmsPermission,
       selectedBankCode = selectedBankCode,
       selectedSignal = selectedAutoPaySignal,
       onSelectBank = { viewModel.setBankFilter(it) },
       onSelectSignal = { viewModel.setAutoPaySignalFilter(it) },
+      onScanDeviceSms = {
+        if (hasSmsPermission) {
+          viewModel.scanDeviceSms(context)
+        } else {
+          smsPermissionLauncher.launch(Manifest.permission.READ_SMS)
+        }
+      },
       onLoadSampleFeed = { viewModel.loadSampleBankSms() },
       onParseCustomSms = { text, sender -> viewModel.parseAndAddCustomSms(text, sender) },
       onAddSmsToTracked = { viewModel.addParsedSmsToSubscriptions(it) },

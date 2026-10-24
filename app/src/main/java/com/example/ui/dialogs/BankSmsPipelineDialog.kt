@@ -78,10 +78,12 @@ import com.example.ui.theme.WhiteSurface
 fun BankSmsPipelineDialog(
   smsList: List<ParsedBankSms>,
   isScanning: Boolean,
+  hasSmsPermission: Boolean = false,
   selectedBankCode: BankCode?,
   selectedSignal: AutoPaySignal?,
   onSelectBank: (BankCode?) -> Unit,
   onSelectSignal: (AutoPaySignal?) -> Unit,
+  onScanDeviceSms: () -> Unit,
   onLoadSampleFeed: () -> Unit,
   onParseCustomSms: (String, String) -> Unit,
   onAddSmsToTracked: (ParsedBankSms) -> Unit,
@@ -182,33 +184,86 @@ fun BankSmsPipelineDialog(
           }
         }
 
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Permission Status Banner
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (hasSmsPermission) Color(0xFFF0FDF4) else Color(0xFFEFF6FF))
+            .border(0.75.dp, if (hasSmsPermission) Color(0xFFBBF7D0) else Color(0xFFBAE6FD), RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+            Icon(
+              imageVector = Icons.Default.Sms,
+              contentDescription = null,
+              tint = if (hasSmsPermission) SoftSage else SoftSky,
+              modifier = Modifier.size(13.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = if (hasSmsPermission) "READ_SMS Permission Granted • Scanning local inbox" else "Grant READ_SMS permission to scan transaction messages",
+              color = if (hasSmsPermission) SoftSage else SoftSky,
+              fontSize = 9.5.sp,
+              fontWeight = FontWeight.SemiBold
+            )
+          }
+
+          if (!hasSmsPermission) {
+            Button(
+              onClick = onScanDeviceSms,
+              shape = RoundedCornerShape(4.dp),
+              colors = ButtonDefaults.buttonColors(containerColor = SoftSky, contentColor = Color.White),
+              contentPadding = PaddingValues(horizontal = 6.dp, vertical = 1.dp),
+              modifier = Modifier.height(22.dp).testTag("btn_grant_sms_permission")
+            ) {
+              Text("Grant Access", fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+            }
+          }
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Quick Action Bar: Load Sample Feed & Toggle Custom Paste
+        // Quick Action Bar: Scan SMS Inbox, Load Sample Feed & Toggle Custom Paste
         Row(
           modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(6.dp)
+          horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-          OutlinedButton(
-            onClick = onLoadSampleFeed,
+          Button(
+            onClick = onScanDeviceSms,
+            enabled = !isScanning,
             shape = RoundedCornerShape(6.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-            modifier = Modifier.weight(1f).height(28.dp).testTag("btn_load_sample_feed")
+            colors = ButtonDefaults.buttonColors(containerColor = SoftSky, contentColor = Color.White),
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+            modifier = Modifier.weight(1f).height(28.dp).testTag("btn_scan_device_sms")
           ) {
             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(11.dp))
             Spacer(modifier = Modifier.width(3.dp))
-            Text("Sample UPI Feed", fontSize = 9.5.sp, color = TextSecondary)
+            Text(if (isScanning) "Scanning..." else "Scan Device SMS", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+          }
+
+          OutlinedButton(
+            onClick = onLoadSampleFeed,
+            shape = RoundedCornerShape(6.dp),
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+            modifier = Modifier.weight(1f).height(28.dp).testTag("btn_load_sample_feed")
+          ) {
+            Text("Sample Feed", fontSize = 9.sp, color = TextSecondary)
           }
 
           OutlinedButton(
             onClick = { isPasteExpanded = !isPasteExpanded },
             shape = RoundedCornerShape(6.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
             modifier = Modifier.weight(1f).height(28.dp).testTag("btn_toggle_paste_sms")
           ) {
-            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(11.dp))
-            Spacer(modifier = Modifier.width(3.dp))
-            Text(if (isPasteExpanded) "Hide Input" else "Paste Mandate SMS", fontSize = 9.5.sp, color = TextSecondary)
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(10.dp))
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(if (isPasteExpanded) "Hide" else "Paste SMS", fontSize = 9.sp, color = TextSecondary)
           }
 
           NeumorphicButton(
@@ -218,9 +273,9 @@ fun BankSmsPipelineDialog(
             elevation = 2.dp,
             modifier = Modifier.height(28.dp).testTag("btn_import_all_mandates")
           ) {
-            Icon(Icons.AutoMirrored.Filled.PlaylistAddCheck, contentDescription = null, tint = SoftSage, modifier = Modifier.size(12.dp))
-            Spacer(modifier = Modifier.width(3.dp))
-            Text("Track All", fontSize = 9.5.sp, color = SoftSage, fontWeight = FontWeight.Bold)
+            Icon(Icons.AutoMirrored.Filled.PlaylistAddCheck, contentDescription = null, tint = SoftSage, modifier = Modifier.size(11.dp))
+            Spacer(modifier = Modifier.width(2.dp))
+            Text("Track All", fontSize = 9.sp, color = SoftSage, fontWeight = FontWeight.Bold)
           }
         }
 
