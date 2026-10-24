@@ -1,0 +1,6 @@
+{
+  "name": "Subscriptions.AI",
+  "description": "Enterprise and consumer spend-optimization platform with automated discovery, 1-click cancellation, and AI negotiations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
